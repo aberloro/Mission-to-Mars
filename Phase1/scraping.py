@@ -1,88 +1,113 @@
-#Import Pandas, splinter and beautifulsoup
+# Import Splinter, BeautifulSoup, and Pandas
 from splinter import Browser
 from bs4 import BeautifulSoup as soup
-from webdriver_manager.chrome import ChromeDriverManager
 import pandas as pd
+import datetime as dt
+from webdriver_manager.chrome import ChromeDriverManager
 
-#set executable path for splinter
-executable_path = {'executable_path': ChromeDriverManager().install()}
-browser = Browser('chrome', **executable_path, headless=False)
+def scrape_all():
+    # Initiate headless driver for deployment
+    executable_path = {'executable_path': ChromeDriverManager().install()}
+    browser = Browser('chrome', **executable_path, headless=True)
+
+    news_title, news_paragraph = mars_news(browser)
+
+    # Run all scraping functions and store results in a dictionary
+    data = {
+        "news_title": news_title,
+        "news_paragraph": news_paragraph,
+        "featured_image": featured_image(browser),
+        "facts": mars_facts(),
+        "last_modified": dt.datetime.now()
+    }
+
+    # Stop webdriver and return data
+    browser.quit()
+    return data
 
 #################################################
 # Scrape Latest Article from redplanetscience.com
 #################################################
 
-# Visit the mars nasa news site
-url = 'https://redplanetscience.com'
-browser.visit(url)
+def mars_news(browser):
 
-# Optional delay for loading the page in case page is slow to load
-#search tag 'div' and attribute 'list_text'
-browser.is_element_present_by_css('div.list_text', wait_time=1)
+    # Scrape Mars News
+    # Visit the mars nasa news site
+    url = 'https://data-class-mars.s3.amazonaws.com/Mars/index.html'
+    browser.visit(url)
 
-#Set up HTML Parser
-html = browser.html
-news_soup = soup(html, 'html.parser')
+    # Optional delay for loading the page
+    browser.is_element_present_by_css('div.list_text', wait_time=1)
 
-#variable to set 'parent element' within which we look for first <div/> tag with class .list_text
-slide_elem = news_soup.select_one('div.list_text')
+    # Convert the browser html to a soup object and then quit the browser
+    html = browser.html
+    news_soup = soup(html, 'html.parser')
 
-#begin scraping for article title to .find() data in the slide variable set earlier
-#.find() returns FIRST instance vs .findall(_)
-slide_elem.find('div', class_='content_title')
+    # Add try/except for error handling
+    try:
+        slide_elem = news_soup.select_one('div.list_text')
+        # Use the parent element to find the first 'a' tag and save it as 'news_title'
+        news_title = slide_elem.find('div', class_='content_title').get_text()
+        # Use the parent element to find the paragraph text
+        news_p = slide_elem.find('div', class_='article_teaser_body').get_text()
 
-#just the text from above, no HTML
-#Use the parent element to find the first 'anchor' tag and save it as `news_title`
-#with .get_text
-news_title = slide_elem.find('div', class_='content_title').get_text()
-news_title
+    except AttributeError:
+        return None, None
 
-# Use the parent element to find the paragraph text
-news_p = slide_elem.find('div', class_='article_teaser_body').get_text()
-news_p
+    return news_title, news_p
 
 ##############################3333333###################
 # Scrape Latest Featured Image from spaceimages-mars.com
 ###############################3333333##################
 
-# tell splinter to visit URL
-url = 'https://spaceimages-mars.com'
-browser.visit(url)
+def featured_image(browser):
+    # Visit URL
+    url = 'https://data-class-jpl-space.s3.amazonaws.com/JPL_Space/index.html'
+    browser.visit(url)
 
-# Find and click the full image button, located at index [1] (the second button)
-full_image_elem = browser.find_by_tag('button')[1]
-full_image_elem.click()
+    # Find and click the full image button
+    full_image_elem = browser.find_by_tag('button')[1]
+    full_image_elem.click()
 
-# Parse the resulting html with soup
-html = browser.html
-img_soup = soup(html, 'html.parser')
+    # Parse the resulting html with soup
+    html = browser.html
+    img_soup = soup(html, 'html.parser')
 
-# Find the relative image url with img tag, class 'fancybox-image' and .get('src')
-img_url_rel = img_soup.find('img', class_='fancybox-image').get('src')
-img_url_rel
+    # Add try/except for error handling
+    try:
+        # Find the relative image url
+        img_url_rel = img_soup.find('img', class_='fancybox-image').get('src')
 
-# Use the base URL to create an absolute URL variable with f string
-img_url = f'https://spaceimages-mars.com/{img_url_rel}'
-img_url
+    except AttributeError:
+        return None
+
+    # Use the base url to create an absolute url
+    img_url = f'https://data-class-jpl-space.s3.amazonaws.com/JPL_Space/{img_url_rel}'
+
+    return img_url
 
 ######################################3333###########
 # Scrape Mars v Earth table from galaxyfacts-mars.com
 #####################################3333############
 
-#find the first table ([0]) from this website and read_html into a pandas DataFrame
-df = pd.read_html('https://galaxyfacts-mars.com')[0]
+def mars_facts():
+    # Add try/except for error handling
+    try:
+        # Use 'read_html' to scrape the facts table into a dataframe
+        df = pd.read_html('https://data-class-mars-facts.s3.amazonaws.com/Mars_Facts/index.html')[0]
 
-#assign columns
-df.columns=['description', 'Mars', 'Earth']
+    except BaseException:
+        return None
 
-#set_index to the descrption inplace
-df.set_index('description', inplace=True)
-df
+    # Assign columns and set index of dataframe
+    df.columns=['Description', 'Mars', 'Earth']
+    df.set_index('Description', inplace=True)
 
-#convert dataframe back to html
-df.to_html()
+    # Convert dataframe into HTML format, add bootstrap
+    return df.to_html(classes="table table-striped")
 
-#end automated session
-browser.quit()
+if __name__ == "__main__":
 
+    # If running as script, print scraped data
+    print(scrape_all())
 

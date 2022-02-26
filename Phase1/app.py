@@ -32,6 +32,6 @@ def scrape():
    return redirect('/', code=302)
 
 #tell it to run!
-if__name__ == "__main__":
+if __name__ == "__main__":
     app.run()
-    
+
