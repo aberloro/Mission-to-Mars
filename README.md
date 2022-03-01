@@ -20,7 +20,7 @@ The purpose of this project is to improve upon Phase1 work with the below delive
     - Latest featured image from [JPL](https://spaceimages-mars.com)
     - [Facts](https://galaxyfacts-mars.com) on Mars vs Earth
     - Images of Mars [hemispheres](https://marshemispheres.com/)
-    - [Bootstrap 3](https://getbootstrap.com/docs/3.3/css/) compoonents
+    - [Bootstrap 3](https://getbootstrap.com/docs/3.3/css/) components
  - Technology: Splinter, BeautifulSoup, MongoDB, Visual Studio Code, Jupyter Notebook, Python 3.7, Flask
 
  ### Overview of Code
@@ -31,3 +31,4 @@ The purpose of this project is to improve upon Phase1 work with the below delive
 
 ### Snap of Web App
 
+![WebAppSnap](https://user-images.githubusercontent.com/93740725/156263775-0cad4189-ec56-4dad-b0c2-76a895b0e89f.png)
