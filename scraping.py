@@ -18,7 +18,8 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
-        "last_modified": dt.datetime.now()
+        "last_modified": dt.datetime.now(),
+        "hemispheres": mars_hemispheres(browser)
     }
 
     # Stop webdriver and return data
@@ -105,6 +106,63 @@ def mars_facts():
 
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
+
+#######################################################
+# D1: Scrape High Res Mars Hemisphere Images and Titles
+#######################################################
+
+def mars_hemispheres(browser):
+    # 1. Use browser to visit the URL 
+    url = 'https://marshemispheres.com/'
+    browser.visit(url)
+
+    # Parse the resulting html with soup
+    html = browser.html
+    hemi_img_soup = soup(html, 'html.parser')
+
+    # 2. Create a list to hold the images and titles.
+    hemisphere_image_urls = []
+
+    # 3. Write code to retrieve the image urls and titles for each hemisphere.
+    #initiate a list to hold the pages we need to navigate to
+    page_list = []
+
+    #create parent element 
+    product_list = hemi_img_soup.select('div.item')
+
+    #add url to page_list for items found in parent element
+    for item in product_list:
+        try:
+            page_url = item.find('a')['href']
+            page_list.append(page_url)
+        except AttributeError:
+            return None
+
+    #loop through each page that holds hemisphere jpgs and title
+    for hemisphere in page_list:
+        #visit the page
+        browser.visit(f'{url}{hemisphere}')
+        hemi_html = browser.html
+        hemi_soup = soup(hemi_html, 'html.parser')
+        
+        try:
+            #find jpg urls
+            jpg = hemi_soup.select('div.downloads') 
+            for each in jpg:
+                jpg_url = each.find('a')['href']
+
+            #find titles
+            titles = hemi_soup.select('h2.title')
+            for title in titles:
+                hemi_title = title.text
+        except AttributeError:
+            return None, None
+
+        #add jpg url and title to list of dictionaries
+        hemisphere_image_urls.append({"title" : hemi_title, "img_url" : f'{url}{jpg_url}'})
+
+    # 4. Print the list that holds the dictionary of each image url and title.
+    return hemisphere_image_urls
 
 if __name__ == "__main__":
 
